@@ -1,0 +1,31 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+# https://www.vagrantup.com/docs/other/environmental-variables.html#vagrant_default_template
+Vagrant.configure("2") do |config|
+  if ARGV[0] == 'ssh'
+    config.ssh.config = "/dev/null"
+  end
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+
+  config.vm.box = "ubuntu/impish64"
+
+
+  config.vm.synced_folder ".", "/vagrant", disabled: true
+   config.vm.provider "virtualbox" do |vb|
+    vb.memory = "4096"
+    vb.linked_clone = true
+   end
+
+  config.vm.provision "shell", inline: <<-SHELL
+   rm /etc/machine-id
+   rm /var/lib/dbus/machine-id
+   dbus-uuidgen --ensure
+   systemd-machine-id-setup
+   SHELL
+  config.vm.synced_folder ".", "/opt/vagrant", type: "rsync",
+    rsync__exclude: [".git/", "*.vdi"],
+    rsync__args: ["--verbose", "--rsync-path='sudo rsync'", "--archive", "--delete", "-z"]
+config.vm.provision "bootstrap", type: "shell", path: "bootstrap.sh", run: "never"
+config.vm.provision "init", type: "shell", path: "init.sh", run: "never"
+config.vm.provision "build", type: "shell", path: "build.sh", run: "never"
+end
